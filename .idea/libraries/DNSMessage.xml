@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="DNSMessage">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/DNSMessage/DNSMessage.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
