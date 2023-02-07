@@ -15,10 +15,8 @@ public class DNSMessage {
     // Opcode for a standard query
     public final static int QUERY = 0;
 
-    /**
-     * TODO:  You will add additional constants and fields
-     */
     private final ByteBuffer buffer;
+
 
 
 
@@ -30,6 +28,7 @@ public class DNSMessage {
     public DNSMessage(short id) {
         this.buffer = ByteBuffer.allocate(MAX_DNS_MESSAGE_LENGTH);
         // TODO: Complete this method
+        setID(id);
     }
 
     /**
@@ -41,20 +40,34 @@ public class DNSMessage {
     public DNSMessage(byte[] recvd, int length) {
         buffer = ByteBuffer.wrap(recvd, 0, length);
         // TODO: Complete this method
+        System.out.println(length);
+        getID();
+        getQR();
     }
 
     /**
      * Getters and setters for the various fixed size and fixed location fields of a DNSMessage
      * TODO:  They are all to be completed
      */
+    public static int bits(int n, int offset, int length) {
+        return n >> (32 - offset - length) & ~(-1 << length);
+    }
     public int getID() {
-        return 0;
+        byte temp[] = new byte[2];
+        System.out.println("position in getID =" + buffer.position());
+        buffer.get(0, temp);
+        return ByteBuffer.wrap(temp).getChar();
     }
 
     public void setID(int id) {
     }
 
     public boolean getQR() {
+        int qr = bits(buffer.getInt(2), 0, 1);
+        System.out.println(qr);
+        if(qr == 1){
+            return true;
+        }
         return false;
     }
 
