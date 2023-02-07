@@ -13,7 +13,7 @@ public class DNSMessage {
     public final static int DataOffset = 12;
 
     // Opcode for a standard query
-    public final static int QUERY = 0;
+    public final static int QUERY = 12;
 
     private final ByteBuffer buffer;
 
@@ -43,6 +43,8 @@ public class DNSMessage {
         System.out.println(length);
         getID();
         getQR();
+        getOpcode();
+
     }
 
     /**
@@ -54,17 +56,19 @@ public class DNSMessage {
     }
     public int getID() {
         byte temp[] = new byte[2];
-        System.out.println("position in getID =" + buffer.position());
-        buffer.get(0, temp);
+        buffer.position(0);
+        buffer.get(temp);
         return ByteBuffer.wrap(temp).getChar();
     }
 
     public void setID(int id) {
+        buffer.position(0);
+        buffer.putShort((short)id);
     }
 
     public boolean getQR() {
-        int qr = bits(buffer.getInt(2), 0, 1);
-        System.out.println(qr);
+        buffer.position(2);
+        int qr = bits(buffer.getInt(), 0, 1);
         if(qr == 1){
             return true;
         }
@@ -72,23 +76,54 @@ public class DNSMessage {
     }
 
     public void setQR(boolean qr) {
+        buffer.position(2);
+        if(qr) {
+            buffer.put((byte)1);
+        } else {
+            buffer.put((byte)0);
+        }
     }
 
     public boolean getAA() {
-        return false;
+        buffer.position(2);
+        int aa = bits(buffer.getInt(), 5, 1);
+        System.out.println("AA "+ aa);
+       if(aa == 1){
+           return true;
+       }
+       return false;
     }
 
     public void setAA(boolean aa) {
+
     }
 
     public int getOpcode() {
-        return 0;
+        buffer.position(2);
+        int opcode = bits(buffer.getInt(), 1, 4);
+        System.out.println("Opcode  "+ opcode);
+        return opcode;
     }
 
     public void setOpcode(int opcode) {
+        buffer.position(2);
+        boolean qr = getQR();
+        byte b = 0;
+        if(qr){
+            b += 1 << 0xF;
+        }
+        System.out.println(b);
+        b += bits(opcode, 0, 32);
+        System.out.println(b);
+        buffer.put(b);
     }
 
     public boolean getTC() {
+        buffer.position(2);
+        int tc = bits(buffer.getInt(), 6, 1);
+        if(tc ==1) {
+            return true;
+        }
         return false;
     }
 
@@ -96,6 +131,11 @@ public class DNSMessage {
     }
 
     public boolean getRD() {
+        buffer.position(2);
+        int rd = bits(buffer.getInt(), 7, 1);
+        if(rd ==1) {
+            return true;
+        }
         return false;
     }
 
@@ -103,6 +143,11 @@ public class DNSMessage {
     }
 
     public boolean getRA() {
+        buffer.position(2);
+        int rd = bits(buffer.getInt(), 8, 1);
+        if(rd ==1) {
+            return true;
+        }
         return false;
     }
 
@@ -110,7 +155,10 @@ public class DNSMessage {
     }
 
     public int getRcode() {
-        return 0;
+        buffer.position(2);
+        System.out.println(buffer.position());
+        int rcode = bits(buffer.getInt(), 12, 4);
+        return rcode;
     }
 
     public void setRcode(int rcode) {
