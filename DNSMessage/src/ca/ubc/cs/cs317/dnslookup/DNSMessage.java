@@ -40,7 +40,6 @@ public class DNSMessage {
     public DNSMessage(byte[] recvd, int length) {
         buffer = ByteBuffer.wrap(recvd, 0, length);
         // TODO: Complete this method
-        System.out.println(length);
         getID();
         getQR();
         getOpcode();
@@ -55,20 +54,19 @@ public class DNSMessage {
         return n >> (32 - offset - length) & ~(-1 << length);
     }
     public int getID() {
-        byte temp[] = new byte[2];
         buffer.position(0);
-        buffer.get(temp);
-        return ByteBuffer.wrap(temp).getChar();
+        return buffer.getShort() & 0xFFFF;
     }
 
     public void setID(int id) {
         buffer.position(0);
-        buffer.putShort((short)id);
+        buffer.putShort((short) id);
     }
 
     public boolean getQR() {
         buffer.position(2);
-        int qr = bits(buffer.getInt(), 0, 1);
+        int qr = buffer.get() & 0xF;
+        System.out.println("qr in get " +qr);
         if(qr == 1){
             return true;
         }
@@ -77,8 +75,17 @@ public class DNSMessage {
 
     public void setQR(boolean qr) {
         buffer.position(2);
+        int QR = qr ? 1 << 8 : 0;
+        int OPCODE = getOpcode() << 7;
+        int AA = getAA() ? 1<<4 : 0;
+        int TC = getTC() ? 1<<3 : 0;
+        int RD = getRD() ? 1<<2 : 0;
+        int RA = getRA() ? 1<<1 : 0;
+        int newV = QR+OPCODE+AA+TC+RD+RA;
+        System.out.println("qr set with new v "+(short)QR);
+        buffer.position(2);
         if(qr) {
-            buffer.put((byte)1);
+            buffer.putShort((short)(QR));
         } else {
             buffer.put((byte)0);
         }
@@ -86,36 +93,34 @@ public class DNSMessage {
 
     public boolean getAA() {
         buffer.position(2);
-        int aa = bits(buffer.getInt(), 5, 1);
-        System.out.println("AA "+ aa);
-       if(aa == 1){
-           return true;
-       }
+
+
        return false;
     }
 
     public void setAA(boolean aa) {
-
+        buffer.position(2);
+        short qrb = (1 << 8);
+        System.out.println("qr set " + qrb);
+        if (aa) {
+            buffer.putShort(qrb);
+        } else {
+            buffer.put((byte) 0);
+        }
     }
+
 
     public int getOpcode() {
         buffer.position(2);
-        int opcode = bits(buffer.getInt(), 1, 4);
-        System.out.println("Opcode  "+ opcode);
-        return opcode;
+        return (buffer.getShort() >> 10) & 0xFFFF;
     }
 
     public void setOpcode(int opcode) {
         buffer.position(2);
-        boolean qr = getQR();
-        byte b = 0;
-        if(qr){
-            b += 1 << 0xF;
-        }
-        System.out.println(b);
-        b += bits(opcode, 0, 32);
-        System.out.println(b);
-        buffer.put(b);
+        short qr = getQR() ? (short) (1 << 16) : 0;
+        short qro = (short)(qr + (opcode << 15));
+        System.out.println("opcode is "+qro);
+        buffer.putShort(qro);
     }
 
     public boolean getTC() {
@@ -132,10 +137,6 @@ public class DNSMessage {
 
     public boolean getRD() {
         buffer.position(2);
-        int rd = bits(buffer.getInt(), 7, 1);
-        if(rd ==1) {
-            return true;
-        }
         return false;
     }
 
@@ -165,25 +166,33 @@ public class DNSMessage {
     }
 
     public int getQDCount() {
-        return 0;
+        buffer.position(4);
+        return buffer.getShort() & 0xFFFF;
     }
 
     public void setQDCount(int count) {
+        buffer.position(4);
+        buffer.putShort((short) count);
     }
 
     public int getANCount() {
-        return 0;
+        buffer.position(6);
+        return buffer.getShort() & 0xFFFF;
     }
 
     public int getNSCount() {
-        return 0;
+        buffer.position(8);
+        return buffer.getShort() & 0xFFFF;
     }
 
     public int getARCount() {
-        return 0;
+        buffer.position(10);
+        return buffer.getShort() & 0xFFFF;
     }
 
     public void setARCount(int count) {
+        buffer.position(10);
+        buffer.putShort((short) count);
     }
 
     /**
