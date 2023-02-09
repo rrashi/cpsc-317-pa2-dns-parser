@@ -50,12 +50,9 @@ public class DNSMessage {
      * Getters and setters for the various fixed size and fixed location fields of a DNSMessage
      * TODO:  They are all to be completed
      */
-    public static int bits(int n, int offset, int length) {
-        return n >> (32 - offset - length) & ~(-1 << length);
-    }
     public int getID() {
         buffer.position(0);
-        return buffer.getShort() & 0xFFFF;
+        return (int)buffer.getShort() & 0xFFFF;
     }
 
     public void setID(int id) {
@@ -64,9 +61,8 @@ public class DNSMessage {
     }
 
     public boolean getQR() {
-        buffer.position(2);
-        int qr = buffer.get() & 0xF;
-        System.out.println("qr in get " +qr);
+        int qr = buffer.getChar(2)>>15;
+        System.out.println("qr in get " + qr);
         if(qr == 1){
             return true;
         }
@@ -74,95 +70,99 @@ public class DNSMessage {
     }
 
     public void setQR(boolean qr) {
-        buffer.position(2);
-        int QR = qr ? 1 << 8 : 0;
-        int OPCODE = getOpcode() << 7;
-        int AA = getAA() ? 1<<4 : 0;
-        int TC = getTC() ? 1<<3 : 0;
-        int RD = getRD() ? 1<<2 : 0;
-        int RA = getRA() ? 1<<1 : 0;
-        int newV = QR+OPCODE+AA+TC+RD+RA;
-        System.out.println("qr set with new v "+(short)QR);
-        buffer.position(2);
-        if(qr) {
-            buffer.putShort((short)(QR));
-        } else {
-            buffer.put((byte)0);
-        }
+        System.out.println("set qr "+ qr);
+        char temp = buffer.getChar(2);
+        int QR =  qr ? (0x8000|temp) : (0xFFFE&temp);
+        System.out.println("temp | char "+ (temp|QR));
+        buffer.putChar(2, (char)QR);
     }
 
     public boolean getAA() {
-        buffer.position(2);
-
-
-       return false;
+        int aa = (buffer.getChar(2)>>10) & 0x1; //shift by 9 buts to the right, only keep the first bit (get's rid of opcode and QR)
+        System.out.println("aa in get " + aa);
+        if(aa == 1){
+            return true;
+        }
+        return false;
     }
 
     public void setAA(boolean aa) {
-        buffer.position(2);
-        short qrb = (1 << 8);
-        System.out.println("qr set " + qrb);
-        if (aa) {
-            buffer.putShort(qrb);
-        } else {
-            buffer.put((byte) 0);
-        }
+        System.out.println("set aa "+ aa);
+        char temp = buffer.getChar(2);
+        int AA =  aa ? (0x4000|temp) : (0x3ff&temp);
+        buffer.putChar(2, (char)AA);
     }
 
 
     public int getOpcode() {
-        buffer.position(2);
-        return (buffer.getShort() >> 10) & 0xFFFF;
+        int aa = (buffer.getChar(2)>>11) & 0xF; //shift by 9 buts to the right, only keep the first bit (get's rid of opcode and QR)
+        return aa;
     }
 
     public void setOpcode(int opcode) {
-        buffer.position(2);
-        short qr = getQR() ? (short) (1 << 16) : 0;
-        short qro = (short)(qr + (opcode << 15));
-        System.out.println("opcode is "+qro);
-        buffer.putShort(qro);
+        char temp = buffer.getChar(2);
+        int OP = opcode<<15|temp;
+        buffer.putChar(2, (char)OP);
     }
 
     public boolean getTC() {
-        buffer.position(2);
-        int tc = bits(buffer.getInt(), 6, 1);
-        if(tc ==1) {
+        int tc = (buffer.getChar(2)>>9) & 0x1; //shift by 9 buts to the right, only keep the first bit (get's rid of opcode and QR)
+        System.out.println("aa in get " + tc);
+        if(tc == 1){
             return true;
         }
         return false;
     }
 
     public void setTC(boolean tc) {
+        System.out.println("set tc "+ tc);
+        char temp = buffer.getChar(2);
+        int TC =  tc ? (0x200|temp) : (0x1ff&temp);
+        buffer.putChar(2, (char)TC);
     }
 
     public boolean getRD() {
-        buffer.position(2);
+        int rd = (buffer.getChar(2)>>8) & 0x1; //shift by 9 buts to the right, only keep the first bit (get's rid of opcode and QR)
+        System.out.println("rd in get " + rd);
+        if(rd == 1){
+            return true;
+        }
         return false;
     }
 
     public void setRD(boolean rd) {
+        System.out.println("set rd "+ rd);
+        char temp = buffer.getChar(2);
+        int RD =  rd ? (0x100|temp) : (0x1fe&temp);
+        buffer.putChar(2, (char)RD);
     }
 
     public boolean getRA() {
-        buffer.position(2);
-        int rd = bits(buffer.getInt(), 8, 1);
-        if(rd ==1) {
+        int ra = (buffer.getChar(2)>>7) & 0x1; //shift by 9 buts to the right, only keep the first bit (get's rid of opcode and QR)
+        System.out.println("ra in get " + ra);
+        if(ra == 1){
             return true;
         }
         return false;
     }
 
     public void setRA(boolean ra) {
+        System.out.println("set ra "+ ra);
+        char temp = buffer.getChar(2);
+        int RA =  ra ? (0x80|temp) : (0xfe&temp);
+        buffer.putChar(2, (char)RA);
     }
 
     public int getRcode() {
-        buffer.position(2);
-        System.out.println(buffer.position());
-        int rcode = bits(buffer.getInt(), 12, 4);
+        int rcode = buffer.getChar(2) & 0xF; //shift by 9 buts to the right, only keep the first bit (get's rid of opcode and QR)
         return rcode;
     }
 
     public void setRcode(int rcode) {
+        char temp = buffer.getChar(2);
+        int OP = rcode<<4|temp;
+        buffer.putChar(2, (char)OP);
+
     }
 
     public int getQDCount() {
